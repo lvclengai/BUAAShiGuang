@@ -1,13 +1,13 @@
 {
   "name": "shiguang-office",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "拾光 · 轻量日常办公工作台：日历、日程、四象限任务、北京时间、番茄钟、专注统计与日记。",
+  "description": "拾光 · 轻量日常办公工作台：日历、日程、四象限任务、北京时间、番茄钟、专注统计、日记与北航 SPOC 课表同步。",
   "type": "module",
   "scripts": {
     "start": "node server.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

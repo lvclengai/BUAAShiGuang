@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#f4f7fc">
-  <meta name="description" content="拾光，一款轻量、安静、专注的日常办公工作台。日历、日程、四象限任务、专注统计、番茄钟与日记，都安静地收在一起。">
+  <meta name="description" content="拾光，一款轻量、安静、专注的日常办公工作台。日历、日程、四象限任务、专注统计、番茄钟、日记与北航 SPOC 课表，都安静地收在一起。">
   <title>拾光 · 日常办公工作台</title>
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
@@ -131,6 +131,19 @@
       <path d="M12 3.5l1.6 4.9 4.9 1.6-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6L12 3.5Z"></path>
       <path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z"></path>
     </symbol>
+    <symbol id="i-school" viewBox="0 0 24 24">
+      <path d="M3 9.2l9-5 9 5-9 5-9-5Z"></path>
+      <path d="M7 11.4v5.2c2.8 2 7.2 2 10 0v-5.2"></path>
+      <path d="M21 9.5v6.2"></path>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="5" y="10" width="14" height="11" rx="3"></rect>
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2.5"></path>
+    </symbol>
+    <symbol id="i-location" viewBox="0 0 24 24">
+      <path d="M12 21c4.2-4.6 6.5-7.8 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 13.2 7.8 16.4 12 21Z"></path>
+      <circle cx="12" cy="10.5" r="2.2"></circle>
+    </symbol>
   </svg>
 
   <div class="app-shell">
@@ -173,7 +186,7 @@
           <svg aria-hidden="true"><use href="#i-data"></use></svg>
           <span>数据</span>
         </button>
-        <span class="sidebar-version">v1.1</span>
+        <span class="sidebar-version">v1.2</span>
       </div>
     </aside>
 
@@ -205,61 +218,82 @@
       <div class="view-wrap">
         <section class="view is-active" id="dashboardView" aria-label="工作台">
           <div class="workbench-grid">
-            <div class="workbench-left">
-              <section class="card schedule-card workbench-schedule-card" aria-labelledby="todayDateTitle">
-                <header class="card-head compact-head workbench-card-head">
-                  <div>
-                    <p class="eyebrow">TODAY PLAN</p>
-                    <div class="title-with-badge">
-                      <h2 id="todayDateTitle">10月18日</h2>
-                      <span class="soft-badge" id="todayWeekday">周日</span>
-                      <span class="soft-badge is-blue">今天</span>
-                    </div>
+            <section class="card school-card" id="schoolCard" aria-labelledby="schoolHeading">
+              <header class="card-head compact-head school-head">
+                <div>
+                  <p class="eyebrow">BUAA · SPOC</p>
+                  <div class="title-with-badge">
+                    <h2 id="schoolHeading">学校事务</h2>
+                    <span class="school-status" id="schoolStatus">未同步</span>
                   </div>
-                  <div class="header-action-group">
-                    <button class="ghost-btn jump-calendar" type="button" id="goCalendarBtn">
-                      日历
-                      <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
-                    </button>
-                    <button class="icon-btn add-btn" type="button" id="addTodayScheduleBtn" aria-label="添加今天的日程">
-                      <svg aria-hidden="true"><use href="#i-plus"></use></svg>
-                    </button>
-                  </div>
-                </header>
-                <div class="list-progress workbench-progress">
-                  <span class="list-progress-text" id="todayScheduleSummary">2 项日程</span>
-                  <span class="progress-track"><i id="todayScheduleProgress"></i></span>
                 </div>
-                <div class="schedule-list workbench-schedule-list" id="todayScheduleList"></div>
-                <footer class="workbench-card-foot">
-                  <span>把重要的事，放在今天。</span>
-                </footer>
-              </section>
+                <div class="header-action-group">
+                  <button class="ghost-btn" type="button" id="schoolWeekBtn" disabled>本周课表</button>
+                  <button class="icon-btn add-btn" type="button" id="schoolSyncBtn" aria-label="同步北航课表" title="同步北航课表">
+                    <svg aria-hidden="true"><use href="#i-reset"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="school-body" id="schoolBody"></div>
+              <footer class="school-foot">
+                <span class="school-sync-info" id="schoolSyncInfo">连接北航统一认证以同步本周课表</span>
+                <button class="school-login-btn" type="button" id="schoolLoginBtn">连接统一认证</button>
+              </footer>
+            </section>
 
-              <section class="card focus-snapshot-card" aria-labelledby="focusSnapshotHeading">
-                <header class="card-head compact-head">
-                  <div>
-                    <p class="eyebrow">FOCUS TODAY</p>
-                    <div class="title-with-badge">
-                      <h2 id="focusSnapshotHeading">今日专注</h2>
-                      <span class="count-pill" id="workbenchRound">第 1 轮</span>
-                    </div>
+            <section class="card schedule-card workbench-schedule-card" aria-labelledby="todayDateTitle">
+              <header class="card-head compact-head workbench-card-head">
+                <div>
+                  <p class="eyebrow">TODAY PLAN</p>
+                  <div class="title-with-badge">
+                    <h2 id="todayDateTitle">10月18日</h2>
+                    <span class="soft-badge" id="todayWeekday">周日</span>
+                    <span class="soft-badge is-blue">今天</span>
                   </div>
-                  <button class="ghost-btn jump-focus" type="button" id="goFocusBtn">
-                    去专注
+                </div>
+                <div class="header-action-group">
+                  <button class="ghost-btn jump-calendar" type="button" id="goCalendarBtn">
+                    日历
                     <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
                   </button>
-                </header>
-                <div class="focus-snapshot-body">
-                  <div class="focus-snapshot-figure">
-                    <strong><span id="workbenchTomatoes">3</span><small>个番茄</small></strong>
-                    <span id="workbenchFocusMinutes">75 分钟专注</span>
-                  </div>
-                  <div class="workbench-week-bars" id="workbenchWeekBars"></div>
+                  <button class="icon-btn add-btn" type="button" id="addTodayScheduleBtn" aria-label="添加今天的日程">
+                    <svg aria-hidden="true"><use href="#i-plus"></use></svg>
+                  </button>
                 </div>
-                <p class="focus-snapshot-caption" id="workbenchFocusCaption">保持节奏，今天已经专注 75 分钟。</p>
-              </section>
-            </div>
+              </header>
+              <div class="list-progress workbench-progress">
+                <span class="list-progress-text" id="todayScheduleSummary">2 项日程</span>
+                <span class="progress-track"><i id="todayScheduleProgress"></i></span>
+              </div>
+              <div class="schedule-list workbench-schedule-list" id="todayScheduleList"></div>
+              <footer class="workbench-card-foot">
+                <span>把重要的事，放在今天。</span>
+              </footer>
+            </section>
+
+            <section class="card focus-snapshot-card" aria-labelledby="focusSnapshotHeading">
+              <header class="card-head compact-head">
+                <div>
+                  <p class="eyebrow">FOCUS TODAY</p>
+                  <div class="title-with-badge">
+                    <h2 id="focusSnapshotHeading">今日专注</h2>
+                    <span class="count-pill" id="workbenchRound">第 1 轮</span>
+                  </div>
+                </div>
+                <button class="ghost-btn jump-focus" type="button" id="goFocusBtn">
+                  去专注
+                  <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+                </button>
+              </header>
+              <div class="focus-snapshot-body">
+                <div class="focus-snapshot-figure">
+                  <strong><span id="workbenchTomatoes">3</span><small>个番茄</small></strong>
+                  <span id="workbenchFocusMinutes">75 分钟专注</span>
+                </div>
+                <div class="workbench-week-bars" id="workbenchWeekBars"></div>
+              </div>
+              <p class="focus-snapshot-caption" id="workbenchFocusCaption">保持节奏，今天已经专注 75 分钟。</p>
+            </section>
 
             <section class="card tasks-card workbench-tasks-card" aria-labelledby="taskHeading">
               <header class="card-head compact-head tasks-head">
@@ -817,6 +851,71 @@
     </form>
   </dialog>
 
+  <dialog class="modal school-dialog" id="schoolDialog" aria-labelledby="schoolDialogTitle">
+    <form id="schoolForm" novalidate autocomplete="off">
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow">BUAA · UNIFIED AUTHENTICATION</p>
+          <h2 id="schoolDialogTitle">连接学校课表</h2>
+        </div>
+        <button class="icon-btn modal-close" type="button" data-close-dialog aria-label="关闭">
+          <svg aria-hidden="true"><use href="#i-close"></use></svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <div class="school-security-note">
+          <svg aria-hidden="true"><use href="#i-lock"></use></svg>
+          <div>
+            <strong>账号密码只用于本次同步，不会保存。</strong>
+            <p>拾光通过本机服务登录北航统一认证，再读取 SPOC 本周课表。密码不会写入浏览器数据库，也不会返回给页面。</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="field-label">北航统一认证账号</span>
+          <input id="schoolUsername" name="username" type="text" maxlength="80" autocomplete="off" placeholder="学号 / 统一认证账号" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label">密码</span>
+          <input id="schoolPassword" name="password" type="password" maxlength="200" autocomplete="off" placeholder="请输入统一认证密码">
+        </label>
+
+        <p class="form-error" id="schoolError" role="alert" hidden></p>
+        <div class="school-login-tips">
+          <p><svg aria-hidden="true"><use href="#i-info"></use></svg>需要连接校园网或学校 VPN，且课表服务需处于可用状态。</p>
+          <p><svg aria-hidden="true"><use href="#i-info"></use></svg>若统一认证要求验证码或二次验证，自动同步可能失败；可先在浏览器完成一次登录再试。</p>
+          <p>拾光不是北航官方应用，课表同步为本地辅助功能。</p>
+        </div>
+      </div>
+      <footer class="modal-foot">
+        <span class="school-form-status" id="schoolFormStatus"></span>
+        <span class="modal-foot-spacer"></span>
+        <button class="secondary" type="button" data-close-dialog>取消</button>
+        <button class="primary" type="submit" id="schoolSubmitBtn">登录并同步</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="modal modal-wide" id="schoolWeekDialog" aria-labelledby="schoolWeekDialogTitle">
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow">WEEKLY TIMETABLE</p>
+        <h2 id="schoolWeekDialogTitle">本周课表</h2>
+        <p class="school-week-meta" id="schoolWeekMeta"></p>
+      </div>
+      <button class="icon-btn modal-close" type="button" data-close-dialog aria-label="关闭">
+        <svg aria-hidden="true"><use href="#i-close"></use></svg>
+      </button>
+    </header>
+    <div class="modal-body school-week-modal-body">
+      <div class="school-week-grid" id="schoolWeekGrid"></div>
+    </div>
+    <footer class="modal-foot">
+      <span class="modal-foot-spacer"></span>
+      <button class="primary" type="button" data-close-dialog>完成</button>
+    </footer>
+  </dialog>
+
   <dialog class="modal modal-settings" id="dataDialog" aria-labelledby="dataDialogTitle">
     <header class="modal-head">
       <div>
@@ -873,7 +972,7 @@
 
       <div class="local-note">
         <svg aria-hidden="true"><use href="#i-info"></use></svg>
-        <span>拾光 v1.1 · 轻量离线工作台<br>数据存储于本地数据库，建议使用 Chrome / Edge 浏览器。</span>
+        <span>拾光 v1.2 · 轻量离线工作台<br>数据存储于本地数据库；北航课表同步需要 start.cmd 本地服务。</span>
       </div>
     </div>
     <footer class="modal-foot">

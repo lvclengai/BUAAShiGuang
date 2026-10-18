@@ -90,6 +90,8 @@
   let journalSaveTimer = null;
   let journalLoading = false;
   let selectedWeather = "";
+  let selectedSchoolDay = "";
+  let schoolSyncing = false;
 
   const timer = {
     mode: "focus",
@@ -255,6 +257,7 @@
       tasks: [],
       focusLogs: [],
       journals: [],
+      school: null,
       settings: defaultSettings(),
       createdAt: new Date().toISOString()
     };
@@ -476,8 +479,58 @@
       tasks,
       focusLogs,
       journals,
+      school: null,
       settings: defaultSettings(),
       createdAt: now
+    };
+  }
+
+  function normalizeSchool(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const week = raw.week && typeof raw.week === "object" ? raw.week : {};
+    if (!isDateKey(week.startDate) || !isDateKey(week.endDate)) return null;
+    if (!Array.isArray(raw.days)) return null;
+
+    const days = raw.days.slice(0, 7).map((day) => {
+      if (!day || typeof day !== "object" || !isDateKey(day.date)) return null;
+      const courses = (Array.isArray(day.courses) ? day.courses : [])
+        .slice(0, 50)
+        .map((course) => {
+          if (!course || typeof course !== "object") return null;
+          const name = clampText(course.name, 80);
+          if (!name) return null;
+          return {
+            name,
+            location: clampText(course.location, 60),
+            teacher: clampText(course.teacher, 40),
+            periods: clampText(course.periods, 30),
+            startTime: normalizeTime(course.startTime),
+            endTime: normalizeTime(course.endTime)
+          };
+        })
+        .filter(Boolean);
+      return {
+        date: day.date,
+        weekday: Number(day.weekday) || ((weekdayIndex(day.date) + 6) % 7) + 1,
+        courses
+      };
+    }).filter(Boolean);
+
+    if (days.length !== 7) return null;
+    return {
+      week: {
+        xn: clampText(week.xn, 30),
+        xq: clampText(week.xq, 10),
+        zc: Number(week.zc) || 0,
+        index: Number(week.index) || (Number(week.zc) || 0) + 1,
+        label: clampText(week.label, 30) || `第 ${(Number(week.zc) || 0) + 1} 周`,
+        term: clampText(week.term, 60),
+        startDate: week.startDate,
+        endDate: week.endDate
+      },
+      days: days.sort((a, b) => a.date.localeCompare(b.date)),
+      fetchedAt: typeof raw.fetchedAt === "string" ? raw.fetchedAt : new Date().toISOString(),
+      source: "spoc.buaa.edu.cn"
     };
   }
 
@@ -488,7 +541,8 @@
       !Array.isArray(source.schedules) &&
       !Array.isArray(source.tasks) &&
       !Array.isArray(source.focusLogs) &&
-      !Array.isArray(source.journals)
+      !Array.isArray(source.journals) &&
+      !(source.school && typeof source.school === "object")
     ) {
       throw new Error("备份文件中没有可识别的数据");
     }
@@ -590,6 +644,8 @@
         updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : new Date().toISOString()
       });
     }
+
+    next.school = normalizeSchool(source.school);
 
     if (source.settings && typeof source.settings === "object") {
       const goal = Number(source.settings.dailyGoal);
@@ -906,10 +962,285 @@
     renderSchedules();
     renderTasks();
     renderWorkbenchFocus();
+    renderSchoolCard();
     renderFocusStats();
     renderJournalSidebar();
     updateTimerUI();
     updateDataStats();
+  }
+
+  function schoolDayOn(dateKey) {
+    if (!state.school || !Array.isArray(state.school.days)) return null;
+    return state.school.days.find((day) => day.date === dateKey) || null;
+  }
+
+  function schoolTodayCourses() {
+    const day = schoolDayOn(todayKey());
+    return day ? day.courses : [];
+  }
+
+  function schoolWeekIsCurrent(school) {
+    if (!school || !school.week) return false;
+    const today = todayKey();
+    return today >= school.week.startDate && today <= school.week.endDate;
+  }
+
+  function schoolStatusInfo() {
+    if (!state.school) {
+      return { label: "未同步", className: "", stale: false };
+    }
+    const stale = !schoolWeekIsCurrent(state.school);
+    return {
+      label: stale ? "需更新" : "已同步",
+      className: stale ? "is-stale" : "is-ready",
+      stale
+    };
+  }
+
+  function formatCourseTime(course) {
+    if (course.startTime && course.endTime) {
+      return `<span class="school-course-time">${escapeHTML(course.startTime)}<small>${escapeHTML(course.endTime)} 下课</small></span>`;
+    }
+    if (course.startTime) {
+      return `<span class="school-course-time">${escapeHTML(course.startTime)}<small>${escapeHTML(course.periods || "")}</small></span>`;
+    }
+    if (course.periods) {
+      return `<span class="school-course-time">${escapeHTML(course.periods)}<small>节次</small></span>`;
+    }
+    return `<span class="school-course-time">—<small>时间待定</small></span>`;
+  }
+
+  function currentMinutesInBeijing() {
+    const parts = beijingParts();
+    return parts.hour * 60 + parts.minute;
+  }
+
+  function courseIsNow(course, dayKey) {
+    if (dayKey !== todayKey() || !course.startTime || !course.endTime) return false;
+    const toMinutes = (time) => {
+      const [hour, minute] = time.split(":").map(Number);
+      return hour * 60 + minute;
+    };
+    const now = currentMinutesInBeijing();
+    return now >= toMinutes(course.startTime) && now <= toMinutes(course.endTime);
+  }
+
+  function schoolCourseMarkup(course, dayKey) {
+    const meta = [course.teacher, course.periods].filter(Boolean).join(" · ");
+    return `
+      <div class="school-course-row${courseIsNow(course, dayKey) ? " is-now" : ""}">
+        ${formatCourseTime(course)}
+        <span class="school-course-info">
+          <strong title="${escapeHTML(course.name)}">${escapeHTML(course.name)}</strong>
+          <span>${meta ? escapeHTML(meta) : "课程安排"}</span>
+        </span>
+        ${
+          course.location
+            ? `<span class="school-course-location" title="${escapeHTML(course.location)}">${icon("location")}<span>${escapeHTML(course.location)}</span></span>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  function renderSchoolCard() {
+    if (!dom.schoolBody) return;
+    const status = schoolStatusInfo();
+
+    dom.schoolStatus.textContent = status.label;
+    dom.schoolStatus.className = `school-status${status.className ? ` ${status.className}` : ""}`;
+    dom.schoolWeekBtn.disabled = !state.school;
+
+    if (!state.school) {
+      selectedSchoolDay = "";
+      dom.schoolLoginBtn.textContent = "连接统一认证";
+      dom.schoolSyncInfo.textContent = location.protocol === "file:"
+        ? "请先运行 start.cmd，再连接北航统一认证"
+        : "连接北航统一认证以同步本周课表";
+      dom.schoolBody.innerHTML = `
+        <div class="school-empty">
+          <span class="school-empty-icon">${icon("school")}</span>
+          <strong>把课表交给拾光</strong>
+          <p>连接北航统一认证，读取本周 SPOC 课表。每天上课前，这里会先提醒你。</p>
+          <button class="school-login-btn" type="button" data-school-connect>连接统一认证</button>
+        </div>
+      `;
+      return;
+    }
+
+    const school = state.school;
+    const dates = school.days.map((day) => day.date);
+    if (!selectedSchoolDay || !dates.includes(selectedSchoolDay)) {
+      const today = todayKey();
+      selectedSchoolDay = dates.includes(today)
+        ? today
+        : dates.find((date) => schoolDayOn(date)?.courses.length) || dates[0];
+    }
+    const selectedDay = schoolDayOn(selectedSchoolDay);
+    const selectedCourses = selectedDay ? selectedDay.courses : [];
+
+    dom.schoolLoginBtn.textContent = status.stale ? "更新课表" : "重新同步";
+    dom.schoolSyncInfo.textContent = status.stale
+      ? "课表已过期，请重新同步"
+      : `第 ${school.week.index} 周 · ${formatSavedTime(school.fetchedAt)} 同步`;
+
+    const weekStrip = school.days
+      .map((day) => {
+        const dateParts = partsFromKey(day.date);
+        const isSelected = day.date === selectedSchoolDay;
+        const isToday = day.date === todayKey();
+        const count = day.courses.length;
+        return `
+          <button class="school-day-tab${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}" type="button" data-school-date="${day.date}" aria-label="${formatMonthDay(day.date)}，${count} 节课">
+            <span class="school-day-name">${WEEKDAYS_TINY[weekdayIndex(day.date)]}</span>
+            <span class="school-day-date">${dateParts.day}</span>
+            <span class="school-day-count${count ? " has-course" : ""}">${count ? `<i></i>${count}` : "—"}</span>
+          </button>
+        `;
+      })
+      .join("");
+
+    const courseList = selectedCourses.length
+      ? selectedCourses.map((course) => schoolCourseMarkup(course, selectedSchoolDay)).join("")
+      : `
+        <div class="school-empty">
+          <span class="school-empty-icon">${icon("sun")}</span>
+          <strong>${selectedSchoolDay === todayKey() ? "今天没有课" : "这一天没有课"}</strong>
+          <p>${selectedSchoolDay === todayKey() ? "享受自己的节奏，也可以安排一点专注时间。" : "给自己留一点空白，也很好。"}</p>
+        </div>
+      `;
+
+    const dayHeading = selectedSchoolDay === todayKey()
+      ? "今日课程"
+      : `${formatMonthDay(selectedSchoolDay)} 课程`;
+    dom.schoolBody.innerHTML = `
+      <div class="school-week-strip">${weekStrip}</div>
+      <div class="school-day-heading"><span>${dayHeading}</span><strong>${selectedCourses.length} 节</strong></div>
+      <div class="school-day-list">${courseList}</div>
+    `;
+  }
+
+  function renderSchoolWeekDialog() {
+    if (!state.school) return;
+    const school = state.school;
+    dom.schoolWeekMeta.textContent = `${school.week.label} · ${formatShortDate(school.week.startDate)} – ${formatShortDate(school.week.endDate)}${school.week.term ? ` · ${school.week.term}` : ""}`;
+    dom.schoolWeekGrid.innerHTML = school.days
+      .map((day) => {
+        const dateParts = partsFromKey(day.date);
+        const isToday = day.date === todayKey();
+        const courses = day.courses.length
+          ? day.courses.map((course) => `
+              <div class="school-week-course">
+                <strong>${escapeHTML(course.name)}</strong>
+                <span>${[course.startTime && course.endTime ? `${course.startTime}–${course.endTime}` : course.periods, course.location].filter(Boolean).map(escapeHTML).join(" · ") || "时间待定"}</span>
+              </div>
+            `).join("")
+          : '<div class="school-week-empty">无课</div>';
+        return `
+          <div class="school-week-column${isToday ? " is-today" : ""}">
+            <div class="school-week-day-head">
+              <strong>${WEEKDAYS_SHORT[weekdayIndex(day.date)]}</strong>
+              <small>${dateParts.month}.${pad(dateParts.day)}</small>
+            </div>
+            <div class="school-week-courses">${courses}</div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function openSchoolDialog() {
+    if (location.protocol === "file:") {
+      showToast("学校同步需要先运行 start.cmd，通过本地服务打开应用");
+      return;
+    }
+    hideFormError(dom.schoolError);
+    dom.schoolFormStatus.textContent = "";
+    dom.schoolUsername.value = "";
+    dom.schoolPassword.value = "";
+    dom.schoolSubmitBtn.disabled = false;
+    dom.schoolSubmitBtn.textContent = "登录并同步";
+    dom.schoolDialog.showModal();
+    window.setTimeout(() => dom.schoolUsername.focus(), 40);
+  }
+
+  async function syncSchoolTimetable(event) {
+    event.preventDefault();
+    if (schoolSyncing) return;
+    hideFormError(dom.schoolError);
+
+    const username = dom.schoolUsername.value.trim();
+    const password = dom.schoolPassword.value;
+    if (!username || !password) {
+      showFormError(dom.schoolError, "请填写北航统一认证账号和密码。");
+      return;
+    }
+
+    schoolSyncing = true;
+    const card = dom.schoolCard;
+    card.classList.add("is-loading");
+    card.setAttribute("aria-busy", "true");
+    dom.schoolSyncBtn.disabled = true;
+    dom.schoolSyncBtn.classList.add("is-spinning");
+    dom.schoolSubmitBtn.disabled = true;
+    dom.schoolSubmitBtn.textContent = "正在同步…";
+    dom.schoolFormStatus.textContent = "正在登录统一认证并读取课表，可能需要十几秒…";
+    dom.schoolPassword.value = "";
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45000);
+    try {
+      const response = await fetch("./api/school/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        signal: controller.signal
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = null;
+      }
+      if (!response.ok || !payload || !payload.ok) {
+        if (response.status === 404) {
+          throw new Error("本机课表同步服务未启动，请通过 start.cmd 运行拾光。");
+        }
+        throw new Error((payload && payload.message) || "同步失败，请稍后再试。");
+      }
+      const normalized = normalizeSchool(payload);
+      if (!normalized) {
+        throw new Error("课表数据格式不完整，请稍后再试。");
+      }
+      state.school = normalized;
+      selectedSchoolDay = normalized.days.some((day) => day.date === todayKey())
+        ? todayKey()
+        : normalized.days[0].date;
+      saveState();
+      renderSchoolCard();
+      updateTopbar();
+      renderSchoolWeekDialog();
+      dom.schoolDialog.close();
+      showToast(`课表已同步 · ${normalized.week.label}`);
+    } catch (error) {
+      const message = error && error.name === "AbortError"
+        ? "同步超时，请检查校园网络或 VPN 后重试。"
+        : /fetch|NetworkError|Failed to fetch/i.test(String(error && error.message))
+          ? "无法连接本机同步服务，请通过 start.cmd 启动应用后重试。"
+          : error.message || "同步失败，请稍后再试。";
+      showFormError(dom.schoolError, message);
+      dom.schoolFormStatus.textContent = "";
+    } finally {
+      window.clearTimeout(timeout);
+      schoolSyncing = false;
+      card.classList.remove("is-loading");
+      card.removeAttribute("aria-busy");
+      dom.schoolSyncBtn.disabled = false;
+      dom.schoolSyncBtn.classList.remove("is-spinning");
+      dom.schoolSubmitBtn.disabled = false;
+      dom.schoolSubmitBtn.textContent = "登录并同步";
+      dom.schoolPassword.value = "";
+    }
   }
 
   function renderWorkbenchFocus() {
@@ -1488,7 +1819,8 @@
       const todaySchedules = schedulesOn(today).length;
       const todo = activeTasks().length;
       const tomatoes = focusCountOn(today);
-      dom.topbarSummary.textContent = `今天 ${todaySchedules} 项日程 · ${todo} 个任务待办 · ${tomatoes} 个番茄`;
+      const classText = state.school ? ` · 今日 ${schoolTodayCourses().length} 节课` : "";
+      dom.topbarSummary.textContent = `今天 ${todaySchedules} 项日程 · ${todo} 个任务待办 · ${tomatoes} 个番茄${classText}`;
     }
     lastRenderedDate = today;
   }
@@ -1624,6 +1956,7 @@
       renderSchedules();
       renderFocusStats();
       renderWorkbenchFocus();
+      renderSchoolCard();
       renderJournalSidebar();
       updateDataStats();
     } else if (today !== lastRenderedDate) {
@@ -2396,6 +2729,7 @@
         setViewToDate(selectedDate);
         journalDate = todayKey();
         journalDirty = false;
+        selectedSchoolDay = "";
         saveState();
         syncSettingsUI();
         renderAll();
@@ -2419,6 +2753,7 @@
         setViewToDate(selectedDate);
         journalDate = todayKey();
         journalDirty = false;
+        selectedSchoolDay = "";
         saveState();
         syncSettingsUI();
         renderAll();
@@ -2544,6 +2879,31 @@
     dom.goCalendarBtn.addEventListener("click", () => setPage("calendar"));
     dom.goFocusBtn.addEventListener("click", () => setPage("focus"));
     dom.addTaskBtn.addEventListener("click", () => openTaskDialog());
+    dom.schoolLoginBtn.addEventListener("click", openSchoolDialog);
+    dom.schoolSyncBtn.addEventListener("click", openSchoolDialog);
+    dom.schoolWeekBtn.addEventListener("click", () => {
+      if (!state.school) return;
+      renderSchoolWeekDialog();
+      dom.schoolWeekDialog.showModal();
+    });
+    dom.schoolBody.addEventListener("click", (event) => {
+      const connect = event.target.closest("[data-school-connect]");
+      if (connect) {
+        openSchoolDialog();
+        return;
+      }
+      const dayButton = event.target.closest("[data-school-date]");
+      if (dayButton) {
+        selectedSchoolDay = dayButton.dataset.schoolDate;
+        renderSchoolCard();
+      }
+    });
+    dom.schoolForm.addEventListener("submit", syncSchoolTimetable);
+    dom.schoolDialog.addEventListener("close", () => {
+      dom.schoolPassword.value = "";
+      hideFormError(dom.schoolError);
+      dom.schoolFormStatus.textContent = "";
+    });
     dom.prevMonth.addEventListener("click", () => shiftMonth(-1));
     dom.nextMonth.addEventListener("click", () => shiftMonth(1));
     dom.goToday.addEventListener("click", goToToday);
@@ -2766,6 +3126,23 @@
     dom.workbenchFocusCaption = $("#workbenchFocusCaption");
     dom.goFocusBtn = $("#goFocusBtn");
     dom.calendarMonthSummary = $("#calendarMonthSummary");
+    dom.schoolCard = $("#schoolCard");
+    dom.schoolBody = $("#schoolBody");
+    dom.schoolStatus = $("#schoolStatus");
+    dom.schoolWeekBtn = $("#schoolWeekBtn");
+    dom.schoolSyncBtn = $("#schoolSyncBtn");
+    dom.schoolLoginBtn = $("#schoolLoginBtn");
+    dom.schoolSyncInfo = $("#schoolSyncInfo");
+    dom.schoolDialog = $("#schoolDialog");
+    dom.schoolForm = $("#schoolForm");
+    dom.schoolUsername = $("#schoolUsername");
+    dom.schoolPassword = $("#schoolPassword");
+    dom.schoolError = $("#schoolError");
+    dom.schoolSubmitBtn = $("#schoolSubmitBtn");
+    dom.schoolFormStatus = $("#schoolFormStatus");
+    dom.schoolWeekDialog = $("#schoolWeekDialog");
+    dom.schoolWeekMeta = $("#schoolWeekMeta");
+    dom.schoolWeekGrid = $("#schoolWeekGrid");
     dom.calendarDayTomatoes = $("#calendarDayTomatoes");
     dom.taskList = $("#taskList");
     dom.addTaskBtn = $("#addTaskBtn");
