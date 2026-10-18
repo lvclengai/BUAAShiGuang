@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fc">
+  <meta name="description" content="拾光，一款轻量、安静、专注的日常办公工作台。日历、日程、四象限任务、专注统计、番茄钟与日记，都安静地收在一起。">
+  <title>拾光 · 日常办公工作台</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24">
+      <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+      <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+      <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+      <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+    </symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24">
+      <circle cx="12" cy="13" r="8"></circle>
+      <path d="M12 9.2v4.1l2.7 1.5"></path>
+      <path d="M9.2 2.5h5.6"></path>
+      <path d="M12 2.5v2.6"></path>
+      <path d="M18.4 6.1l1.2-1.2"></path>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14"></path>
+    </symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24">
+      <path d="M15 5l-7 7 7 7"></path>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24">
+      <path d="M9 5l7 7-7 7"></path>
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect>
+      <path d="M8 3v4M16 3v4M3.5 9.5h17"></path>
+      <path d="M8.2 13.8h.1M12 13.8h.1M15.8 13.8h.1M8.2 17h.1M12 17h.1"></path>
+    </symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24">
+      <path d="M12.5 20H21"></path>
+      <path d="M16.7 3.7a2.1 2.1 0 013 3L7 19.4 3 20.4l1-4L16.7 3.7z"></path>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.9 13.5h9.2L17.5 7"></path>
+      <path d="M10 11v6M14 11v6"></path>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="M5 12.5l4.5 4.5L19 7"></path>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6L6 18"></path>
+    </symbol>
+    <symbol id="i-data" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5.5" rx="7.5" ry="3"></ellipse>
+      <path d="M4.5 5.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"></path>
+      <path d="M4.5 11.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"></path>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <path d="M8.5 5.5v13l10-6.5-10-6.5z" fill="currentColor" stroke="none"></path>
+    </symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24">
+      <path d="M8 5.5h3v13H8zM13 5.5h3v13h-3z" fill="currentColor" stroke="none"></path>
+    </symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24">
+      <path d="M4.5 9.5A8 8 0 1112 20"></path>
+      <path d="M4.5 4.5v5h5"></path>
+    </symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24">
+      <path d="M6 5.5l9 6.5-9 6.5v-13z" fill="currentColor" stroke="none"></path>
+      <path d="M18 5v14"></path>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 3.5v11M8 10.5l4 4 4-4"></path>
+      <path d="M4.5 18.5h15"></path>
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 15V3.5M8 7.5l4-4 4 4"></path>
+      <path d="M4.5 18.5h15"></path>
+    </symbol>
+    <symbol id="i-tomato" viewBox="0 0 24 24">
+      <circle cx="12" cy="14" r="7.2" fill="currentColor"></circle>
+      <path d="M12 7.6c-2.4 0-4.2-1.6-4.2-3.3 2.3 0 4.2 1.4 4.2 3.3Z" fill="#68A079"></path>
+      <path d="M12 7.6c2.4 0 4.2-1.6 4.2-3.3-2.3 0-4.2 1.4-4.2 3.3Z" fill="#68A079"></path>
+      <path d="M11 7.5h2v3h-2z" fill="#68A079"></path>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2.5v2M12 19.5v2M4.3 4.3l1.4 1.4M18.3 18.3l1.4 1.4M2.5 12h2M19.5 12h2M4.3 19.7l1.4-1.4M18.3 5.7l1.4-1.4"></path>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24">
+      <path d="M4.5 12h15M14 6.5l5.5 5.5-5.5 5.5"></path>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 10.5v6M12 7.3h.01"></path>
+    </symbol>
+    <symbol id="i-journal" viewBox="0 0 24 24">
+      <path d="M5 4.5h11.5A2.5 2.5 0 0 1 19 7v13H7.5A2.5 2.5 0 0 1 5 17.5v-13Z"></path>
+      <path d="M5 17.5A2.5 2.5 0 0 1 7.5 15H19"></path>
+      <path d="M9 8h6M9 11.2h4.2"></path>
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24">
+      <path d="M4 19.5h16"></path>
+      <path d="M7 16V9M12 16V5.5M17 16v-4"></path>
+    </symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24">
+      <path d="M7 18h10.2a3.4 3.4 0 0 0 .4-6.8 5.1 5.1 0 0 0-9.8-1.4A3.9 3.9 0 0 0 7 18Z"></path>
+    </symbol>
+    <symbol id="i-cloud-sun" viewBox="0 0 24 24">
+      <circle cx="8.2" cy="8.2" r="2.7"></circle>
+      <path d="M8.2 2.8v1.4M2.8 8.2h1.4M4.4 4.4l1 1M12 4.4l-1 1"></path>
+      <path d="M8 19h9.4a3.1 3.1 0 0 0 .4-6.2A4.7 4.7 0 0 0 9 11.6 3.7 3.7 0 0 0 8 19Z"></path>
+    </symbol>
+    <symbol id="i-rain" viewBox="0 0 24 24">
+      <path d="M7 15.5h10.2a3.4 3.4 0 0 0 .4-6.8 5.1 5.1 0 0 0-9.8-1.4A3.9 3.9 0 0 0 7 15.5Z"></path>
+      <path d="M8.5 18.2l-1 2M12.3 18.2l-1 2M16.1 18.2l-1 2"></path>
+    </symbol>
+    <symbol id="i-snow" viewBox="0 0 24 24">
+      <path d="M7 15.5h10.2a3.4 3.4 0 0 0 .4-6.8 5.1 5.1 0 0 0-9.8-1.4A3.9 3.9 0 0 0 7 15.5Z"></path>
+      <path d="M8.5 19.2v2M7.6 19.7l1.8 1M9.4 19.7l-1.8 1M15.5 19.2v2M14.6 19.7l1.8 1M16.4 19.7l-1.8 1"></path>
+    </symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24">
+      <path d="M3.5 8.5h10a2.6 2.6 0 1 0-2.4-3.6"></path>
+      <path d="M3.5 12.5h15a2.4 2.4 0 1 1-2.2 3.3"></path>
+      <path d="M3.5 16.5h6.2a2.2 2.2 0 1 1-2 3"></path>
+    </symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path d="M12 3.5l1.6 4.9 4.9 1.6-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6L12 3.5Z"></path>
+      <path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z"></path>
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="应用导航">
+      <a class="brand" href="#" aria-label="拾光工作台">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="5" width="16" height="15" rx="4.5" stroke="currentColor" stroke-width="1.6"></rect>
+            <path d="M8 3.2v4M16 3.2v4M4 9.4h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+            <path d="M8.6 14.2l2.2 2.2 4.6-4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <span class="brand-name">拾光</span>
+      </a>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item is-active" type="button" data-page-target="dashboard">
+          <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"></use></svg>
+          <span>工作台</span>
+        </button>
+        <button class="nav-item" type="button" data-page-target="calendar">
+          <svg class="nav-icon" aria-hidden="true"><use href="#i-calendar"></use></svg>
+          <span>日历</span>
+        </button>
+        <button class="nav-item" type="button" data-page-target="focus">
+          <span class="nav-icon-wrap">
+            <svg class="nav-icon" aria-hidden="true"><use href="#i-timer"></use></svg>
+            <i class="nav-running-dot" id="navRunningDot" hidden></i>
+          </span>
+          <span>专注钟</span>
+        </button>
+        <button class="nav-item" type="button" data-page-target="journal">
+          <svg class="nav-icon" aria-hidden="true"><use href="#i-journal"></use></svg>
+          <span>日记</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <button class="sidebar-tool" type="button" id="openDataBtn" title="数据与设置" aria-label="数据与设置">
+          <svg aria-hidden="true"><use href="#i-data"></use></svg>
+          <span>数据</span>
+        </button>
+        <span class="sidebar-version">v1.1</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <p class="topbar-date">
+            <span id="topbarDate">10月18日 · 星期六</span>
+            <button class="demo-pill" id="demoBadge" type="button" title="查看示例数据说明" hidden>示例数据</button>
+          </p>
+          <h1 id="topbarTitle">下午好，把重要的事做好。</h1>
+          <p class="topbar-summary" id="topbarSummary">今天 3 项日程 · 4 个任务待办 · 3 个番茄</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="clock-chip" title="北京时间 UTC+8">
+            <span class="clock-live" aria-hidden="true"></span>
+            <span class="clock-chip-copy">
+              <span class="clock-chip-time"><span id="topClockTime">14:06</span><span class="clock-seconds" id="topClockSeconds">:39</span></span>
+              <span class="clock-chip-zone">北京时间</span>
+            </span>
+          </div>
+          <button class="primary topbar-primary" type="button" id="newScheduleBtn" aria-label="新建日程" title="新建日程">
+            <svg aria-hidden="true"><use href="#i-plus"></use></svg>
+            <span>新建日程</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="view-wrap">
+        <section class="view is-active" id="dashboardView" aria-label="工作台">
+          <div class="workbench-grid">
+            <div class="workbench-left">
+              <section class="card schedule-card workbench-schedule-card" aria-labelledby="todayDateTitle">
+                <header class="card-head compact-head workbench-card-head">
+                  <div>
+                    <p class="eyebrow">TODAY PLAN</p>
+                    <div class="title-with-badge">
+                      <h2 id="todayDateTitle">10月18日</h2>
+                      <span class="soft-badge" id="todayWeekday">周日</span>
+                      <span class="soft-badge is-blue">今天</span>
+                    </div>
+                  </div>
+                  <div class="header-action-group">
+                    <button class="ghost-btn jump-calendar" type="button" id="goCalendarBtn">
+                      日历
+                      <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+                    </button>
+                    <button class="icon-btn add-btn" type="button" id="addTodayScheduleBtn" aria-label="添加今天的日程">
+                      <svg aria-hidden="true"><use href="#i-plus"></use></svg>
+                    </button>
+                  </div>
+                </header>
+                <div class="list-progress workbench-progress">
+                  <span class="list-progress-text" id="todayScheduleSummary">2 项日程</span>
+                  <span class="progress-track"><i id="todayScheduleProgress"></i></span>
+                </div>
+                <div class="schedule-list workbench-schedule-list" id="todayScheduleList"></div>
+                <footer class="workbench-card-foot">
+                  <span>把重要的事，放在今天。</span>
+                </footer>
+              </section>
+
+              <section class="card focus-snapshot-card" aria-labelledby="focusSnapshotHeading">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">FOCUS TODAY</p>
+                    <div class="title-with-badge">
+                      <h2 id="focusSnapshotHeading">今日专注</h2>
+                      <span class="count-pill" id="workbenchRound">第 1 轮</span>
+                    </div>
+                  </div>
+                  <button class="ghost-btn jump-focus" type="button" id="goFocusBtn">
+                    去专注
+                    <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+                  </button>
+                </header>
+                <div class="focus-snapshot-body">
+                  <div class="focus-snapshot-figure">
+                    <strong><span id="workbenchTomatoes">3</span><small>个番茄</small></strong>
+                    <span id="workbenchFocusMinutes">75 分钟专注</span>
+                  </div>
+                  <div class="workbench-week-bars" id="workbenchWeekBars"></div>
+                </div>
+                <p class="focus-snapshot-caption" id="workbenchFocusCaption">保持节奏，今天已经专注 75 分钟。</p>
+              </section>
+            </div>
+
+            <section class="card tasks-card workbench-tasks-card" aria-labelledby="taskHeading">
+              <header class="card-head compact-head tasks-head">
+                <div>
+                  <p class="eyebrow">PRIORITIES</p>
+                  <div class="title-with-badge">
+                    <h2 id="taskHeading">任务</h2>
+                    <span class="count-pill" id="taskCount">0</span>
+                  </div>
+                </div>
+                <div class="tasks-head-actions">
+                  <div class="mini-segment" role="group" aria-label="任务筛选">
+                    <button class="is-active" type="button" data-task-filter="active">进行中</button>
+                    <button type="button" data-task-filter="done">已完成</button>
+                  </div>
+                  <button class="icon-btn add-btn" type="button" id="addTaskBtn" aria-label="添加任务">
+                    <svg aria-hidden="true"><use href="#i-plus"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="task-list" id="taskList"></div>
+              <div class="priority-overview">
+                <div class="priority-overview-head">
+                  <span>四象限分布</span>
+                  <span>进行中</span>
+                </div>
+                <div class="priority-overview-grid">
+                  <div class="priority-overview-item"><span><i class="dot dot-red"></i>重要且紧急</span><strong data-priority-count="urgent-important">0</strong></div>
+                  <div class="priority-overview-item"><span><i class="dot dot-blue"></i>重要不紧急</span><strong data-priority-count="important">0</strong></div>
+                  <div class="priority-overview-item"><span><i class="dot dot-amber"></i>紧急不重要</span><strong data-priority-count="urgent">0</strong></div>
+                  <div class="priority-overview-item"><span><i class="dot dot-grey"></i>不紧急不重要</span><strong data-priority-count="normal">0</strong></div>
+                </div>
+              </div>
+              <footer class="task-foot">
+                <span><i class="dot dot-red"></i>紧急</span>
+                <span><i class="dot dot-blue"></i>重要</span>
+                <span class="task-foot-tip">按截止日期排序</span>
+              </footer>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="calendarView" aria-label="日历" hidden>
+          <div class="calendar-layout">
+            <section class="card calendar-card" aria-labelledby="monthLabel">
+              <header class="card-head calendar-head">
+                <div>
+                  <p class="eyebrow">CALENDAR</p>
+                  <div class="calendar-title-row">
+                    <h2 id="monthLabel">2026年10月</h2>
+                    <span class="month-sub" id="monthSub">第 43 周</span>
+                  </div>
+                </div>
+                <div class="calendar-controls">
+                  <button class="icon-btn" type="button" id="prevMonth" aria-label="上个月">
+                    <svg aria-hidden="true"><use href="#i-chevron-left"></use></svg>
+                  </button>
+                  <button class="ghost-btn today-btn" type="button" id="goToday">今天</button>
+                  <button class="icon-btn" type="button" id="nextMonth" aria-label="下个月">
+                    <svg aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+                  </button>
+                </div>
+              </header>
+
+              <div class="weekdays" aria-hidden="true">
+                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="weekend">六</span><span class="weekend">日</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="月历"></div>
+              <footer class="calendar-foot">
+                <div class="legend">
+                  <span><i class="legend-event"></i>有日程</span>
+                  <span><svg class="legend-tomato" aria-hidden="true"><use href="#i-tomato"></use></svg>专注番茄</span>
+                </div>
+                <span class="calendar-hint">点击日期查看当天安排</span>
+              </footer>
+            </section>
+
+            <aside class="calendar-side">
+              <section class="card schedule-card calendar-agenda-card" aria-labelledby="selectedDateTitle">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">DAY PLAN</p>
+                    <div class="title-with-badge">
+                      <h2 id="selectedDateTitle">10月18日</h2>
+                      <span class="soft-badge" id="selectedWeekday">周日</span>
+                      <span class="soft-badge is-blue" id="selectedTodayBadge" hidden>今天</span>
+                    </div>
+                  </div>
+                  <button class="icon-btn add-btn" type="button" id="addScheduleInline" aria-label="添加当天日程">
+                    <svg aria-hidden="true"><use href="#i-plus"></use></svg>
+                  </button>
+                </header>
+                <div class="list-progress">
+                  <span class="list-progress-text" id="scheduleSummary">暂无安排</span>
+                  <span class="progress-track"><i id="scheduleProgress"></i></span>
+                </div>
+                <div class="schedule-list" id="scheduleList"></div>
+                <footer class="calendar-agenda-foot">
+                  <span id="calendarMonthSummary">本月 0 项日程</span>
+                  <span id="calendarDayTomatoes">0 个番茄</span>
+                </footer>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="focusView" aria-label="专注钟" hidden>
+          <div class="focus-grid">
+            <div class="focus-left">
+              <section class="card clock-card" aria-labelledby="beijingClockHeading">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">BEIJING TIME</p>
+                    <h2 id="beijingClockHeading">北京时间</h2>
+                  </div>
+                  <span class="zone-pill">UTC+8</span>
+                </header>
+                <div class="clock-stage">
+                  <div class="clock-halo" aria-hidden="true"></div>
+                  <div class="big-clock">
+                    <span id="focusClockTime">14:06</span><span class="big-clock-seconds" id="focusClockSeconds">:39</span>
+                  </div>
+                  <p class="big-clock-date" id="focusClockDate">2026年10月18日 · 星期六</p>
+                  <div class="day-progress">
+                    <div class="day-progress-label">
+                      <span>今日时光</span>
+                      <span id="dayProgressLabel">已过 58%</span>
+                    </div>
+                    <span class="progress-track"><i id="dayProgressBar"></i></span>
+                  </div>
+                </div>
+                <footer class="clock-foot">
+                  <span><svg aria-hidden="true"><use href="#i-sun"></use></svg><span id="weekLabel">第 43 周</span></span>
+                  <span id="clockFootnote">保持自己的节奏</span>
+                </footer>
+              </section>
+
+              <section class="card stats-card" aria-labelledby="focusStatsHeading">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">FOCUS LOG</p>
+                    <h2 id="focusStatsHeading">今日专注</h2>
+                  </div>
+                  <span class="goal-copy" id="goalCopy">目标 8 个</span>
+                </header>
+                <div class="stat-row">
+                  <div class="stat-block">
+                    <strong id="statTomatoes">0</strong>
+                    <span>番茄</span>
+                  </div>
+                  <div class="stat-block">
+                    <strong><span id="statMinutes">0</span><small>分钟</small></strong>
+                    <span>专注时长</span>
+                  </div>
+                  <div class="stat-block">
+                    <strong id="statStreak">0<small>天</small></strong>
+                    <span>连续记录</span>
+                  </div>
+                </div>
+                <div class="goal-progress">
+                  <div class="goal-progress-copy">
+                    <span>每日目标</span>
+                    <span id="goalFraction">0 / 8</span>
+                  </div>
+                  <span class="progress-track"><i id="goalProgressBar"></i></span>
+                </div>
+                <div class="week-chart-head">
+                  <span>近 7 天</span>
+                  <span id="weekTotal">共 0 个番茄</span>
+                </div>
+                <div class="week-chart" id="weekChart"></div>
+              </section>
+            </div>
+
+            <section class="card pomodoro-card" aria-labelledby="pomodoroHeading">
+              <header class="card-head compact-head">
+                <div>
+                  <p class="eyebrow">POMODORO</p>
+                  <h2 id="pomodoroHeading">番茄钟</h2>
+                </div>
+                <span class="round-pill" id="roundLabel">第 1 轮</span>
+              </header>
+
+              <div class="timer-modes" role="group" aria-label="计时模式">
+                <button class="is-active" type="button" data-timer-mode="focus">专注</button>
+                <button type="button" data-timer-mode="short">短休息</button>
+                <button type="button" data-timer-mode="long">长休息</button>
+              </div>
+
+              <div class="timer-stage">
+                <div class="timer-ring-wrap">
+                  <svg class="timer-ring" viewBox="0 0 240 240" aria-hidden="true">
+                    <circle class="timer-ring-track" cx="120" cy="120" r="104"></circle>
+                    <circle class="timer-ring-progress" id="timerRingProgress" cx="120" cy="120" r="104"></circle>
+                  </svg>
+                  <div class="timer-center">
+                    <span class="timer-mode-label" id="timerModeLabel">专注</span>
+                    <span class="timer-display" id="timerDisplay" aria-live="off">25:00</span>
+                    <span class="timer-note" id="timerNote">一次只做一件事</span>
+                  </div>
+                </div>
+                <div class="timer-dots" id="cycleDots" aria-label="今天已完成的番茄"></div>
+              </div>
+
+              <div class="timer-actions">
+                <button class="timer-start" type="button" id="timerStartBtn">
+                  <svg aria-hidden="true" id="timerStartIcon"><use href="#i-play"></use></svg>
+                  <span id="timerStartLabel">开始专注</span>
+                </button>
+                <button class="icon-btn timer-tool" type="button" id="timerResetBtn" aria-label="重置计时器" title="重置">
+                  <svg aria-hidden="true"><use href="#i-reset"></use></svg>
+                </button>
+                <button class="icon-btn timer-tool" type="button" id="timerSkipBtn" aria-label="跳过当前阶段" title="跳过">
+                  <svg aria-hidden="true"><use href="#i-skip"></use></svg>
+                </button>
+              </div>
+              <p class="timer-hint">每完成 4 个番茄，给自己一段长休息。完成的番茄会自动记入日历。</p>
+            </section>
+          </div>
+
+          <section class="card focus-insights-card" aria-labelledby="focusInsightsHeading">
+            <header class="card-head focus-insights-head">
+              <div>
+                <p class="eyebrow">INSIGHTS</p>
+                <h2 id="focusInsightsHeading">专注统计</h2>
+                <p class="focus-insights-sub">看看时间去了哪里，也看看自己如何一点点累积。</p>
+              </div>
+              <div class="stats-range" role="group" aria-label="统计时间范围">
+                <button class="is-active" type="button" data-focus-range="7">近 7 天</button>
+                <button type="button" data-focus-range="14">近 14 天</button>
+                <button type="button" data-focus-range="30">近 30 天</button>
+              </div>
+            </header>
+
+            <div class="focus-insights-metrics">
+              <div class="insight-metric">
+                <span>总专注</span>
+                <strong><span id="statsTotalFocus">0</span><small id="statsTotalFocusUnit">分钟</small></strong>
+              </div>
+              <div class="insight-metric">
+                <span>完成番茄</span>
+                <strong><span id="statsTotalTomatoes">0</span><small>个</small></strong>
+              </div>
+              <div class="insight-metric">
+                <span>日均专注</span>
+                <strong><span id="statsAverage">0</span><small>分钟</small></strong>
+              </div>
+              <div class="insight-metric">
+                <span>目标达成</span>
+                <strong><span id="statsGoalRate">0</span><small>%</small></strong>
+              </div>
+            </div>
+
+            <div class="focus-insights-body">
+              <div class="trend-panel">
+                <div class="chart-head">
+                  <div>
+                    <h3>专注时长趋势</h3>
+                    <p id="focusTrendSummary">近 7 天 · 共 0 分钟</p>
+                  </div>
+                  <span class="chart-legend"><i></i>专注分钟</span>
+                </div>
+                <div class="trend-chart-wrap">
+                  <svg id="focusTrendChart" class="focus-trend-chart" viewBox="0 0 760 240" role="img" aria-label="专注时长趋势图"></svg>
+                  <div class="chart-empty" id="focusTrendEmpty" hidden>
+                    <span class="chart-empty-icon"><svg aria-hidden="true"><use href="#i-chart"></use></svg></span>
+                    <p>这段时间还没有专注记录</p>
+                    <small>完成一个番茄后，这里就会亮起来</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="distribution-panel">
+                <div class="chart-head">
+                  <div>
+                    <h3>专注时段占比</h3>
+                    <p id="trendRangeLabel">近 7 天 · 0 个番茄</p>
+                  </div>
+                </div>
+                <div class="donut-layout">
+                  <div class="donut" id="focusDonut" role="img" aria-label="专注时段占比">
+                    <div class="donut-hole">
+                      <strong id="donutTotal">0</strong>
+                      <span>分钟</span>
+                    </div>
+                  </div>
+                  <div class="donut-legend" id="focusDistribution"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="journalView" aria-label="日记" hidden>
+          <div class="journal-grid">
+            <section class="card journal-editor" aria-labelledby="journalDateTitle">
+              <header class="journal-editor-head">
+                <div>
+                  <p class="eyebrow">DAILY JOURNAL</p>
+                  <div class="title-with-badge">
+                    <h2 id="journalDateTitle">10月18日</h2>
+                    <span class="soft-badge" id="journalWeekday">周日</span>
+                    <span class="soft-badge is-blue" id="journalTodayBadge" hidden>今天</span>
+                  </div>
+                </div>
+                <div class="journal-date-nav">
+                  <button class="icon-btn" type="button" id="prevJournalDay" aria-label="前一天">
+                    <svg aria-hidden="true"><use href="#i-chevron-left"></use></svg>
+                  </button>
+                  <label class="journal-date-input-wrap">
+                    <span class="sr-only">选择日记日期</span>
+                    <input type="date" id="journalDateInput" aria-label="选择日记日期">
+                  </label>
+                  <button class="icon-btn" type="button" id="nextJournalDay" aria-label="后一天">
+                    <svg aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+                  </button>
+                  <button class="ghost-btn" type="button" id="journalTodayBtn">今天</button>
+                </div>
+              </header>
+
+              <div class="journal-meta">
+                <div class="journal-weather-field">
+                  <span class="field-label">今日天气</span>
+                  <div class="weather-options" id="weatherOptions" role="group" aria-label="今日天气">
+                    <button class="weather-chip" type="button" data-weather="sunny" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-sun"></use></svg><span>晴</span>
+                    </button>
+                    <button class="weather-chip" type="button" data-weather="cloudy" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-cloud-sun"></use></svg><span>多云</span>
+                    </button>
+                    <button class="weather-chip" type="button" data-weather="overcast" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-cloud"></use></svg><span>阴</span>
+                    </button>
+                    <button class="weather-chip" type="button" data-weather="rainy" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-rain"></use></svg><span>雨</span>
+                    </button>
+                    <button class="weather-chip" type="button" data-weather="snowy" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-snow"></use></svg><span>雪</span>
+                    </button>
+                    <button class="weather-chip" type="button" data-weather="windy" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-wind"></use></svg><span>风</span>
+                    </button>
+                  </div>
+                </div>
+                <label class="journal-title-field">
+                  <span class="field-label">今日标题 <em>可选</em></span>
+                  <input id="journalTitleInput" type="text" maxlength="50" placeholder="给今天起一个短短的标题" autocomplete="off">
+                </label>
+              </div>
+
+              <div class="journal-fields">
+                <label class="journal-field journal-field-main">
+                  <span class="field-label">今天发生了什么</span>
+                  <textarea id="journalContentInput" maxlength="3000" rows="5" placeholder="记下今天的事情、遇见的人，或一点想法…"></textarea>
+                </label>
+                <div class="journal-field-row">
+                  <label class="journal-field">
+                    <span class="field-label"><svg aria-hidden="true"><use href="#i-sparkle"></use></svg>小确幸</span>
+                    <textarea id="journalHappinessInput" maxlength="1000" rows="3" placeholder="今天有什么小事，让你觉得温暖或开心？"></textarea>
+                  </label>
+                  <label class="journal-field">
+                    <span class="field-label">学习 / 工作情况</span>
+                    <textarea id="journalWorkInput" maxlength="1500" rows="3" placeholder="今天学了什么，完成了什么，或者卡在哪里？"></textarea>
+                  </label>
+                </div>
+              </div>
+
+              <footer class="journal-editor-foot">
+                <span class="journal-save-status" id="journalSaveStatus">还没有记录</span>
+                <button class="primary" type="button" id="saveJournalBtn">
+                  <svg aria-hidden="true"><use href="#i-check"></use></svg>
+                  保存日记
+                </button>
+              </footer>
+            </section>
+
+            <aside class="journal-side">
+              <section class="card journal-overview" aria-labelledby="journalOverviewHeading">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">JOURNAL LOG</p>
+                    <h2 id="journalOverviewHeading">记录</h2>
+                  </div>
+                  <span class="goal-copy">慢慢积累</span>
+                </header>
+                <div class="journal-stat-row">
+                  <div class="journal-stat">
+                    <strong id="journalTotal">0</strong>
+                    <span>篇日记</span>
+                  </div>
+                  <div class="journal-stat">
+                    <strong id="journalStreak">0</strong>
+                    <span>连续记录</span>
+                  </div>
+                  <div class="journal-stat">
+                    <strong id="journalMonthCount">0</strong>
+                    <span>本月</span>
+                  </div>
+                </div>
+                <p class="journal-quote">记录，是给生活留的一盏小灯。</p>
+              </section>
+
+              <section class="card journal-recent" aria-labelledby="journalRecentHeading">
+                <header class="card-head compact-head">
+                  <div>
+                    <p class="eyebrow">RECENT</p>
+                    <h2 id="journalRecentHeading">最近记录</h2>
+                  </div>
+                  <span class="count-pill" id="journalCount">0</span>
+                </header>
+                <div class="journal-list" id="journalList"></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog class="modal" id="scheduleDialog" aria-labelledby="scheduleDialogTitle">
+    <form id="scheduleForm" novalidate>
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow" id="scheduleDialogEyebrow">NEW SCHEDULE</p>
+          <h2 id="scheduleDialogTitle">新建日程</h2>
+        </div>
+        <button class="icon-btn modal-close" type="button" data-close-dialog aria-label="关闭">
+          <svg aria-hidden="true"><use href="#i-close"></use></svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">日程标题</span>
+          <input id="scheduleTitle" name="title" type="text" maxlength="60" placeholder="例如：产品设计评审" autocomplete="off" required>
+        </label>
+
+        <div class="field">
+          <span class="field-label">日程类型</span>
+          <div class="segmented" id="scheduleScopeGroup" role="group" aria-label="日程类型">
+            <button class="is-active" type="button" data-scope="single">单日日程</button>
+            <button type="button" data-scope="multi">多日日程</button>
+          </div>
+        </div>
+
+        <div class="field-row is-single" id="scheduleDateRow">
+          <label class="field">
+            <span class="field-label" id="startDateLabel">开始日期</span>
+            <input id="scheduleStart" name="startDate" type="date" required>
+          </label>
+          <label class="field" id="scheduleEndField" hidden>
+            <span class="field-label">结束日期</span>
+            <input id="scheduleEnd" name="endDate" type="date">
+          </label>
+        </div>
+
+        <div class="field-row" id="scheduleTimeRow">
+          <label class="field">
+            <span class="field-label">开始时间 <em>可选</em></span>
+            <input id="scheduleStartTime" name="startTime" type="time">
+          </label>
+          <label class="field">
+            <span class="field-label">结束时间 <em>可选</em></span>
+            <input id="scheduleEndTime" name="endTime" type="time">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field-label">备注 <em>可选</em></span>
+          <textarea id="scheduleNote" name="note" rows="2" maxlength="160" placeholder="补充一点上下文，或需要准备的东西"></textarea>
+        </label>
+
+        <p class="form-error" id="scheduleError" role="alert" hidden></p>
+        <p class="form-tip">多日日程会出现在区间内的每一天；完成状态在所有日期中同步。</p>
+      </div>
+      <footer class="modal-foot">
+        <button class="danger-text" type="button" id="deleteScheduleBtn" hidden>删除日程</button>
+        <span class="modal-foot-spacer"></span>
+        <button class="secondary" type="button" data-close-dialog>取消</button>
+        <button class="primary" type="submit" id="saveScheduleBtn">保存日程</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="taskDialog" aria-labelledby="taskDialogTitle">
+    <form id="taskForm" novalidate>
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow" id="taskDialogEyebrow">NEW TASK</p>
+          <h2 id="taskDialogTitle">新建任务</h2>
+        </div>
+        <button class="icon-btn modal-close" type="button" data-close-dialog aria-label="关闭">
+          <svg aria-hidden="true"><use href="#i-close"></use></svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">任务内容</span>
+          <input id="taskTitle" name="title" type="text" maxlength="60" placeholder="例如：完成季度工作总结" autocomplete="off" required>
+        </label>
+
+        <fieldset class="field priority-field">
+          <legend class="field-label">轻重缓急</legend>
+          <div class="priority-grid">
+            <label class="priority-choice">
+              <input type="radio" name="priority" value="urgent-important" checked>
+              <span class="priority-card p-urgent-important">
+                <span class="priority-card-top"><i class="dot dot-red"></i>重要且紧急</span>
+                <span class="priority-card-desc">优先处理</span>
+              </span>
+            </label>
+            <label class="priority-choice">
+              <input type="radio" name="priority" value="important">
+              <span class="priority-card p-important">
+                <span class="priority-card-top"><i class="dot dot-blue"></i>重要不紧急</span>
+                <span class="priority-card-desc">留出专注时间</span>
+              </span>
+            </label>
+            <label class="priority-choice">
+              <input type="radio" name="priority" value="urgent">
+              <span class="priority-card p-urgent">
+                <span class="priority-card-top"><i class="dot dot-amber"></i>紧急不重要</span>
+                <span class="priority-card-desc">尽快处理</span>
+              </span>
+            </label>
+            <label class="priority-choice">
+              <input type="radio" name="priority" value="normal">
+              <span class="priority-card p-normal">
+                <span class="priority-card-top"><i class="dot dot-grey"></i>不紧急不重要</span>
+                <span class="priority-card-desc">有余力再做</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="field task-due-field">
+          <div class="field-label-row">
+            <span class="field-label">截止日期（DDL）</span>
+            <label class="no-due-toggle">
+              <input type="checkbox" id="taskNoDue">
+              <span>无截止日期</span>
+            </label>
+          </div>
+          <input id="taskDue" name="dueDate" type="date">
+          <p class="field-hint" id="taskDueHint" hidden>不设 DDL 的任务会排在清单末尾，按自己的节奏推进。</p>
+        </div>
+
+        <p class="form-error" id="taskError" role="alert" hidden></p>
+      </div>
+      <footer class="modal-foot">
+        <button class="danger-text" type="button" id="deleteTaskBtn" hidden>删除任务</button>
+        <span class="modal-foot-spacer"></span>
+        <button class="secondary" type="button" data-close-dialog>取消</button>
+        <button class="primary" type="submit" id="saveTaskBtn">保存任务</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="modal modal-settings" id="dataDialog" aria-labelledby="dataDialogTitle">
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow">DATA &amp; SETTINGS</p>
+        <h2 id="dataDialogTitle">数据与设置</h2>
+      </div>
+      <button class="icon-btn modal-close" type="button" data-close-dialog aria-label="关闭">
+        <svg aria-hidden="true"><use href="#i-close"></use></svg>
+      </button>
+    </header>
+    <div class="modal-body">
+      <section class="settings-section">
+        <div class="settings-heading">
+          <h3>专注偏好</h3>
+          <span>自动保存在本机</span>
+        </div>
+        <label class="setting-row">
+          <span><strong>每日番茄目标</strong><small>用于专注页的进度提示</small></span>
+          <span class="stepper">
+            <button type="button" id="goalMinus" aria-label="减少目标">−</button>
+            <input type="number" id="dailyGoalInput" min="1" max="24" value="8" inputmode="numeric" aria-label="每日番茄目标">
+            <button type="button" id="goalPlus" aria-label="增加目标">+</button>
+          </span>
+        </label>
+        <label class="setting-row">
+          <span><strong>完成提示音</strong><small>番茄结束时轻轻提醒</small></span>
+          <span class="switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <div class="settings-heading">
+          <h3>本地数据</h3>
+          <span id="dataStats">0 项日程 · 0 个任务</span>
+        </div>
+        <p class="settings-copy">所有内容只保存在当前浏览器的本地数据库（IndexedDB）中，容量更大，也不会上传到任何服务器。换设备前可以导出备份。</p>
+        <div class="data-actions">
+          <button class="secondary small" type="button" id="exportBtn">
+            <svg aria-hidden="true"><use href="#i-download"></use></svg>导出备份
+          </button>
+          <button class="secondary small" type="button" id="importBtn">
+            <svg aria-hidden="true"><use href="#i-upload"></use></svg>导入备份
+          </button>
+          <button class="danger-soft small" type="button" id="clearDataBtn">
+            <svg aria-hidden="true"><use href="#i-trash"></use></svg>清空数据
+          </button>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+        </div>
+        <p class="settings-demo-note" id="demoNote" hidden>当前包含一组示例内容，清空数据后即可从空白开始。</p>
+      </section>
+
+      <div class="local-note">
+        <svg aria-hidden="true"><use href="#i-info"></use></svg>
+        <span>拾光 v1.1 · 轻量离线工作台<br>数据存储于本地数据库，建议使用 Chrome / Edge 浏览器。</span>
+      </div>
+    </div>
+    <footer class="modal-foot">
+      <span class="modal-foot-spacer"></span>
+      <button class="primary" type="button" data-close-dialog>完成</button>
+    </footer>
+  </dialog>
+
+  <dialog class="modal modal-confirm" id="confirmDialog" aria-labelledby="confirmTitle">
+    <div class="confirm-icon" aria-hidden="true">
+      <svg><use href="#i-trash"></use></svg>
+    </div>
+    <h2 id="confirmTitle">确认操作</h2>
+    <p id="confirmText"></p>
+    <div class="confirm-actions">
+      <button class="secondary" type="button" id="confirmCancel">取消</button>
+      <button class="danger-solid" type="button" id="confirmOk">确认删除</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-dot" aria-hidden="true"></span>
+    <span id="toastText"></span>
+  </div>
+
+  <div class="boot-screen" id="bootScreen" aria-hidden="true">
+    <div class="boot-brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="4" y="5" width="16" height="15" rx="4.5" stroke="currentColor" stroke-width="1.6"></rect>
+          <path d="M8 3.2v4M16 3.2v4M4 9.4h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+          <path d="M8.6 14.2l2.2 2.2 4.6-4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </span>
+      <strong>拾光</strong>
+    </div>
+    <p>正在整理今天的节奏…</p>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

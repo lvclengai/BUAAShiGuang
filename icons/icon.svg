@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="拾光">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4b82f5"/>
+      <stop offset="0.56" stop-color="#2d63e2"/>
+      <stop offset="1" stop-color="#2256cc"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="115" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
+  <path d="M0 116C0 52 52 0 116 0h280c64 0 116 52 116 116v84C426 119 315 62 190 97 112 119 48 181 0 263v-147Z" fill="url(#shine)"/>
+  <rect x="119" y="139" width="274" height="252" rx="62" fill="none" stroke="#ffffff" stroke-width="26"/>
+  <path d="M191 100v61M321 100v61M119 214h274" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round"/>
+  <path d="M191 285l49 49 91-97" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
