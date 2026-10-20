@@ -42,14 +42,14 @@
       const value = Math.round(maxValue * ratio);
       return `
         <line class="chart-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}"></line>
-        <text class="chart-axis-label" x="${padding.left - 10}" y="${y + 3}" text-anchor="end">${value}</text>
+        <text class="chart-axis-label" x="${padding.left - 10}" y="${y + 3}" text-anchor="end" font-weight="400">${value}</text>
       `;
     }).join("");
 
     const labelStep = Math.max(1, Math.ceil(dayList.length / 7));
     const xLabels = dayList.map((day, index) => {
       if (index !== 0 && index !== dayList.length - 1 && index % labelStep !== 0) return "";
-      return `<text class="chart-axis-label chart-x-label" x="${points[index].x}" y="${height - 8}" text-anchor="middle">${formatShortDate(day.key)}</text>`;
+      return `<text class="chart-axis-label chart-x-label" x="${points[index].x}" y="${height - 8}" text-anchor="middle" font-weight="400">${formatShortDate(day.key)}</text>`;
     }).join("");
 
     const linePath = buildSmoothPath(points);

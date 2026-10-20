@@ -3717,17 +3717,20 @@ body.is-resizing-layout .wb-resizer {
 }
 
 .chart-axis-label {
-  fill: #78889f;
+  fill: #93a2b6;
   font-family: var(--font);
-  font-size: 10.5px;
+  font-size: 13.5px;
   font-weight: 400;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
+  opacity: 1;
   text-rendering: geometricPrecision;
 }
 
 .chart-x-label {
-  fill: #728299;
-  font-size: 9.8px;
+  fill: #8f9fb3;
+  font-size: 11.5px;
 }
 
 .chart-area {
