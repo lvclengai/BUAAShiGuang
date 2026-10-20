@@ -186,7 +186,7 @@
           <svg aria-hidden="true"><use href="#i-data"></use></svg>
           <span>数据</span>
         </button>
-        <span class="sidebar-version">v1.2.1</span>
+        <span class="sidebar-version">v1.2.2</span>
       </div>
     </aside>
 
@@ -201,6 +201,9 @@
           <p class="topbar-summary" id="topbarSummary">今天 3 项日程 · 4 个任务待办 · 3 个番茄</p>
         </div>
         <div class="topbar-actions">
+          <button class="icon-btn layout-reset-btn" type="button" id="layoutResetBtn" aria-label="重置工作台布局" title="重置工作台布局">
+            <svg aria-hidden="true"><use href="#i-grid"></use></svg>
+          </button>
           <div class="clock-chip" title="北京时间 UTC+8">
             <span class="clock-live" aria-hidden="true"></span>
             <span class="clock-chip-copy">
@@ -333,6 +336,12 @@
                 <span class="task-foot-tip">按截止日期排序</span>
               </footer>
             </section>
+
+            <div class="workbench-resizers" id="workbenchResizers">
+              <div class="wb-resizer wb-resizer-row" data-resizer="row" role="separator" aria-orientation="horizontal" aria-label="调整上下两行高度" title="拖动调整上下高度，双击恢复默认" tabindex="0"><span></span></div>
+              <div class="wb-resizer wb-resizer-school" data-resizer="school" role="separator" aria-orientation="vertical" aria-label="调整学校事务和今日专注的宽度" title="拖动调整左右宽度，方向键微调，双击恢复默认" tabindex="0"><span></span></div>
+              <div class="wb-resizer wb-resizer-schedule" data-resizer="schedule" role="separator" aria-orientation="vertical" aria-label="调整今日日程和任务的宽度" title="拖动调整左右宽度，方向键微调，双击恢复默认" tabindex="0"><span></span></div>
+            </div>
           </div>
         </section>
 
@@ -972,7 +981,7 @@
 
       <div class="local-note">
         <svg aria-hidden="true"><use href="#i-info"></use></svg>
-        <span>拾光 v1.2.1 · 轻量离线工作台<br>数据存储于本地数据库；北航课表同步需要 start.cmd 本地服务。</span>
+        <span>拾光 v1.2.2 · 轻量离线工作台<br>数据存储于本地数据库；北航课表同步需要 start.cmd 本地服务。</span>
       </div>
     </div>
     <footer class="modal-foot">
@@ -1012,6 +1021,9 @@
     <p>正在整理今天的节奏…</p>
   </div>
 
+  <script src="js/storage.js" defer></script>
+  <script src="js/charts.js" defer></script>
+  <script src="js/layout.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

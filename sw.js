@@ -1,10 +1,13 @@
 /* 拾光 · 离线缓存。静态资源优先使用缓存，导航请求优先使用网络。 */
-const CACHE_NAME = "shiguang-office-v1.2.1";
+const CACHE_NAME = "shiguang-office-v1.2.2";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./js/storage.js",
+  "./js/charts.js",
+  "./js/layout.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",

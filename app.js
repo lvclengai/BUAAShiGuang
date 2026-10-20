@@ -2,10 +2,6 @@
   "use strict";
 
   const STORAGE_KEY = "shiguang.office.v1";
-  const DB_NAME = "shiguang.office.db";
-  const DB_VERSION = 1;
-  const DB_STORE = "workspace";
-  const DB_KEY = "main";
   const BEIJING_TZ = "Asia/Shanghai";
   const DAY_MS = 86400000;
   const MAX_SAFE_TEXT = 60;
@@ -60,6 +56,9 @@
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const storage = window.ShiguangStorage;
+  const charts = window.ShiguangCharts;
+  if (!storage || !charts) throw new Error("应用模块未加载完整");
 
   const dom = {};
 
@@ -81,7 +80,6 @@
   let audioContext = null;
   let idCounter = 0;
   let persistenceMode = "indexeddb";
-  let dbPromise = null;
   let saveTimer = null;
   let saveChain = Promise.resolve();
   let focusRange = 7;
@@ -656,79 +654,12 @@
     return next;
   }
 
-  function openDatabase() {
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-      if (!window.indexedDB) {
-        reject(new Error("IndexedDB 不可用"));
-        return;
-      }
-      let settled = false;
-      const timeout = window.setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        reject(new Error("IndexedDB 打开超时"));
-      }, 4000);
-      let request;
-      try {
-        request = window.indexedDB.open(DB_NAME, DB_VERSION);
-      } catch (error) {
-        window.clearTimeout(timeout);
-        reject(error);
-        return;
-      }
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains(DB_STORE)) {
-          db.createObjectStore(DB_STORE);
-        }
-      };
-      request.onsuccess = () => {
-        if (settled) {
-          request.result.close();
-          return;
-        }
-        settled = true;
-        window.clearTimeout(timeout);
-        const db = request.result;
-        db.onversionchange = () => db.close();
-        resolve(db);
-      };
-      request.onerror = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        reject(request.error || new Error("IndexedDB 打开失败"));
-      };
-      request.onblocked = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        reject(new Error("IndexedDB 被其他页面占用"));
-      };
-    });
-    return dbPromise;
-  }
-
   async function idbReadState() {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(DB_STORE, "readonly");
-      const request = transaction.objectStore(DB_STORE).get(DB_KEY);
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error || new Error("读取本地数据库失败"));
-    });
+    return storage.read();
   }
 
   async function idbWriteState(snapshot) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(DB_STORE, "readwrite");
-      transaction.objectStore(DB_STORE).put(snapshot, DB_KEY);
-      transaction.oncomplete = () => resolve(true);
-      transaction.onerror = () => reject(transaction.error || new Error("写入本地数据库失败"));
-      transaction.onabort = () => reject(transaction.error || new Error("写入本地数据库被中止"));
-    });
+    return storage.write(snapshot);
   }
 
   async function loadState() {
@@ -1646,24 +1577,6 @@
     };
   }
 
-  function buildSmoothPath(points) {
-    if (!points.length) return "";
-    if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-    let path = `M ${points[0].x} ${points[0].y}`;
-    for (let index = 0; index < points.length - 1; index += 1) {
-      const p0 = points[Math.max(0, index - 1)];
-      const p1 = points[index];
-      const p2 = points[index + 1];
-      const p3 = points[Math.min(points.length - 1, index + 2)];
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
-      path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-    }
-    return path;
-  }
-
   function renderFocusInsights() {
     if (!dom.focusTrendChart) return;
     const data = focusRangeData(focusRange);
@@ -1686,54 +1599,13 @@
       button.classList.toggle("is-active", Number(button.dataset.focusRange) === focusRange);
     }
 
-    const width = 760;
-    const height = 240;
-    const padding = { top: 18, right: 16, bottom: 32, left: 44 };
-    const plotWidth = width - padding.left - padding.right;
-    const plotHeight = height - padding.top - padding.bottom;
-    const maxValue = Math.max(30, Math.ceil(Math.max(...data.dayList.map((day) => day.minutes), 1) / 30) * 30);
-    const bottom = padding.top + plotHeight;
-    const points = data.dayList.map((day, index) => ({
-      x: padding.left + (data.dayList.length === 1 ? plotWidth / 2 : (index / (data.dayList.length - 1)) * plotWidth),
-      y: bottom - (day.minutes / maxValue) * plotHeight,
-      value: day.minutes,
-      label: formatShortDate(day.key)
-    }));
-
-    const gridLines = [0, 0.5, 1].map((ratio) => {
-      const y = bottom - plotHeight * ratio;
-      const value = Math.round(maxValue * ratio);
-      return `
-        <line class="chart-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}"></line>
-        <text class="chart-axis-label" x="${padding.left - 10}" y="${y + 3}" text-anchor="end">${value}</text>
-      `;
-    }).join("");
-
-    const labelStep = Math.max(1, Math.ceil(data.dayList.length / 7));
-    const xLabels = data.dayList.map((day, index) => {
-      if (index !== 0 && index !== data.dayList.length - 1 && index % labelStep !== 0) return "";
-      const x = points[index].x;
-      return `<text class="chart-axis-label chart-x-label" x="${x}" y="${height - 8}" text-anchor="middle">${formatShortDate(day.key)}</text>`;
-    }).join("");
-
-    const linePath = buildSmoothPath(points);
-    const areaPath = points.length
-      ? `${linePath} L ${points[points.length - 1].x} ${bottom} L ${points[0].x} ${bottom} Z`
-      : "";
-    const dots = points
-      .map((point) => `<circle class="chart-point" cx="${point.x}" cy="${point.y}" r="${focusRange > 14 ? 2.2 : 3.2}" data-value="${point.value}" data-label="${point.label}"><title>${point.label} · ${point.value} 分钟</title></circle>`)
-      .join("");
-
-    dom.focusTrendChart.innerHTML = `
-      <defs>
-        <linearGradient id="focusTrendFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2f6bed" stop-opacity="0.18"></stop>
-          <stop offset="100%" stop-color="#2f6bed" stop-opacity="0"></stop>
-        </linearGradient>
-      </defs>
-      <g class="chart-grid">${gridLines}${xLabels}</g>
-      ${data.totalMinutes > 0 ? `<path class="chart-area" d="${areaPath}"></path><path class="chart-line" d="${linePath}"></path><g class="chart-points">${dots}</g>` : ""}
-    `;
+    charts.renderFocusTrend(dom.focusTrendChart, {
+      dayList: data.dayList,
+      range: focusRange,
+      totalMinutes: data.totalMinutes,
+      formatShortDate,
+      formatFocusDuration
+    });
     dom.focusTrendChart.setAttribute(
       "aria-label",
       `近 ${focusRange} 天专注时长趋势，总计 ${formatFocusDuration(data.totalMinutes)}，共 ${data.totalTomatoes} 个番茄`
@@ -1745,23 +1617,9 @@
       count: data.slots[slot.key].count,
       percent: data.totalMinutes > 0 ? (data.slots[slot.key].minutes / data.totalMinutes) * 100 : 0
     }));
-    let cursor = 0;
-    const segments = [];
-    for (const slot of slotSummary) {
-      if (slot.minutes <= 0) continue;
-      const end = cursor + slot.percent;
-      segments.push(`${slot.color} ${cursor.toFixed(2)}% ${end.toFixed(2)}%`);
-      cursor = end;
-    }
-    dom.focusDonut.style.background = segments.length
-      ? `conic-gradient(${segments.join(", ")})`
-      : "conic-gradient(#eef2f9 0% 100%)";
-    dom.focusDonut.setAttribute(
-      "aria-label",
-      data.totalMinutes > 0
-        ? `专注时段占比：${slotSummary.map((slot) => `${slot.label}${Math.round(slot.percent)}%`).join("，")}`
-        : "暂无专注记录"
-    );
+    const donut = charts.buildFocusDonut(slotSummary, data.totalMinutes);
+    dom.focusDonut.style.background = donut.background;
+    dom.focusDonut.setAttribute("aria-label", donut.label);
     dom.focusDistribution.innerHTML = slotSummary
       .map(
         (slot) => `
@@ -1897,8 +1755,13 @@
     dom.journalView.hidden = page !== "journal";
     dom.journalView.classList.toggle("is-active", page === "journal");
     dom.newScheduleBtn.hidden = page !== "dashboard" && page !== "calendar";
+    const layoutResetBtn = $("#layoutResetBtn");
+    if (layoutResetBtn) layoutResetBtn.hidden = page !== "dashboard";
     for (const button of $$("[data-page-target]")) {
       button.classList.toggle("is-active", button.dataset.pageTarget === page);
+    }
+    if (page === "dashboard" && window.ShiguangLayout) {
+      window.ShiguangLayout.refresh();
     }
     if (page === "focus") updateTimerUI();
     if (page === "journal") {
@@ -2874,6 +2737,7 @@
   }
 
   function bindEvents() {
+    window.addEventListener("shiguang:layout-reset", () => showToast("工作台布局已恢复默认"));
     dom.newScheduleBtn.addEventListener("click", newScheduleForContext);
     dom.addScheduleInline.addEventListener("click", () => openScheduleDialog(null, selectedDate));
     dom.addTodayScheduleBtn.addEventListener("click", () => openScheduleDialog(null, todayKey()));
@@ -3269,6 +3133,7 @@
     const initialPage = location.hash.replace("#", "");
     setPage(ALLOWED_PAGES.has(initialPage) ? initialPage : "dashboard", false);
     renderAll();
+    if (window.ShiguangLayout) window.ShiguangLayout.init();
     renderJournalEditor();
     tickClock();
     updateDocumentTitle();

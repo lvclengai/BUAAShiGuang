@@ -362,6 +362,26 @@ svg:not(.svg-sprite) {
   gap: 20px;
 }
 
+.layout-reset-btn {
+  width: 36px;
+  height: 36px;
+  color: #7f8da3;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(214, 225, 241, 0.9);
+  box-shadow: 0 4px 14px -12px rgba(24, 55, 112, 0.25);
+}
+
+.layout-reset-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.layout-reset-btn:hover {
+  color: var(--blue);
+  background: #fff;
+  border-color: rgba(47, 107, 237, 0.22);
+}
+
 .clock-chip {
   display: flex;
   align-items: center;
@@ -2579,12 +2599,100 @@ svg:not(.svg-sprite) {
 
 /* Workbench */
 .workbench-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: minmax(245px, 0.72fr) minmax(400px, 1.28fr);
   gap: 18px;
   height: calc(100vh - 157px);
   min-height: 620px;
+}
+
+.workbench-resizers {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.wb-resizer {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  opacity: 0.55;
+  pointer-events: auto;
+  touch-action: none;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+
+.wb-resizer:hover,
+.wb-resizer:focus-visible,
+.wb-resizer.is-active {
+  opacity: 1;
+  background: rgba(47, 107, 237, 0.07);
+}
+
+.wb-resizer:focus-visible {
+  outline: 2px solid rgba(47, 107, 237, 0.35);
+  outline-offset: 2px;
+}
+
+.wb-resizer span {
+  display: block;
+  background: #c9d8ee;
+  border-radius: 999px;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.wb-resizer:hover span,
+.wb-resizer:focus-visible span,
+.wb-resizer.is-active span {
+  background: var(--blue);
+}
+
+.wb-resizer-row {
+  cursor: row-resize;
+}
+
+.wb-resizer-row span {
+  width: 42px;
+  height: 4px;
+}
+
+.wb-resizer-row:hover span,
+.wb-resizer-row:focus-visible span,
+.wb-resizer-row.is-active span {
+  transform: scaleX(1.08);
+}
+
+.wb-resizer-school,
+.wb-resizer-schedule {
+  cursor: col-resize;
+}
+
+.wb-resizer-school span,
+.wb-resizer-schedule span {
+  width: 4px;
+  height: 40px;
+}
+
+.wb-resizer-school:hover span,
+.wb-resizer-school:focus-visible span,
+.wb-resizer-school.is-active span,
+.wb-resizer-schedule:hover span,
+.wb-resizer-schedule:focus-visible span,
+.wb-resizer-schedule.is-active span {
+  transform: scaleY(1.08);
+}
+
+body.is-resizing-layout {
+  user-select: none;
+}
+
+body.is-resizing-layout .wb-resizer {
+  opacity: 1;
 }
 
 .school-card {
@@ -3609,14 +3717,17 @@ svg:not(.svg-sprite) {
 }
 
 .chart-axis-label {
-  fill: #acb7c7;
+  fill: #78889f;
   font-family: var(--font);
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-rendering: geometricPrecision;
 }
 
 .chart-x-label {
-  font-size: 8.5px;
+  fill: #728299;
+  font-size: 9.8px;
 }
 
 .chart-area {
@@ -4975,6 +5086,11 @@ svg:not(.svg-sprite) {
     gap: 17px;
     height: auto;
     min-height: 0;
+  }
+
+  .workbench-resizers,
+  .layout-reset-btn {
+    display: none;
   }
 
   .school-card,
