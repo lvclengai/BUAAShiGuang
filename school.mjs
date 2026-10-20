@@ -80,6 +80,11 @@ function normalizeBuaaDate(value) {
     const key = `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
     if (isDateKey(key)) return key;
   }
+  const monthDay = /^(\d{1,2})月(\d{1,2})日$/.exec(text);
+  if (monthDay) {
+    const key = `${todayKey().slice(0, 4)}-${pad(Number(monthDay[1]))}-${pad(Number(monthDay[2]))}`;
+    if (isDateKey(key)) return key;
+  }
   return "";
 }
 
@@ -333,6 +338,7 @@ function usernameFor(user, fallback) {
 }
 
 function unwrapSpocResponse(payload) {
+  if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") {
     throw new SchoolSyncError("BAD_RESPONSE", "学校服务返回了无法识别的数据。", 502);
   }
@@ -365,6 +371,37 @@ async function spocPost(jar, path, body, token, roleCode) {
     headers,
     body: JSON.stringify(body || {})
   });
+  const text = await responseText(result);
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch (error) {
+    if (result.response.status === 401 || result.response.status === 403) {
+      throw new SchoolSyncError("SPOC_AUTH_FAILED", "课表服务未授权，请重新登录后再试。", 502);
+    }
+    throw new SchoolSyncError("BAD_RESPONSE", "课表服务返回了无法解析的内容。", 502);
+  }
+  if (result.response.status === 401 || result.response.status === 403) {
+    throw new SchoolSyncError("SPOC_AUTH_FAILED", "课表服务未授权，请重新登录后再试。", 502);
+  }
+  return unwrapSpocResponse(payload);
+}
+
+async function spocGet(jar, path, params, token, roleCode) {
+  const url = new URL(`${SPOC_API_BASE}${path}`);
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  const headers = {
+    accept: "application/json, text/plain, */*",
+    "x-requested-with": "XMLHttpRequest",
+    Token: `Inco-${token}`
+  };
+  if (roleCode) headers.RoleCode = roleCode;
+
+  const result = await requestWithJar(jar, url.href, { method: "GET", headers });
   const text = await responseText(result);
   let payload;
   try {
@@ -486,6 +523,56 @@ function chooseWeek(weeklyList) {
   if (!dated.length) return ranked[0];
   dated.sort((a, b) => a.startDate.localeCompare(b.startDate));
   return dated.find((item) => item.startDate > today) || dated[dated.length - 1];
+}
+
+function periodLabel(startPeriod, endPeriod) {
+  if (!startPeriod && !endPeriod) return "";
+  if (startPeriod && endPeriod && startPeriod !== endPeriod) {
+    return `第 ${startPeriod}–${endPeriod} 节`;
+  }
+  return `第 ${startPeriod || endPeriod} 节`;
+}
+
+function buildCalendarDays(entries, startDate) {
+  const days = Array.from({ length: 7 }, (_, index) => ({
+    date: addDays(startDate, index),
+    weekday: index + 1,
+    courses: []
+  }));
+  const seen = new Set();
+
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    if (!entry || typeof entry !== "object") continue;
+    if (entry.lx && entry.lx !== "课程") continue;
+    const date = normalizeBuaaDate(entry.rq);
+    const name = String(entry.kcmc || "").trim();
+    if (!name || !date) continue;
+    const index = Math.round(
+      (dateFromKey(date).getTime() - dateFromKey(startDate).getTime()) / 86400000
+    );
+    if (index < 0 || index > 6) continue;
+
+    const time = parseTimeRange(entry.strkcsj || entry.kcsj || "");
+    const startPeriod = Number(entry.kckssj) || 0;
+    const endPeriod = Number(entry.kcjssj) || startPeriod;
+    const location = String(entry.skdd || "").trim();
+    const key = `${date}|${name}|${time.start}|${time.end}|${location}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    days[index].courses.push({
+      name,
+      location,
+      teacher: String(entry.jsxm || entry.zjxm || "").trim(),
+      periods: periodLabel(startPeriod, endPeriod),
+      startTime: time.start,
+      endTime: time.end,
+      firstPeriod: startPeriod || 99
+    });
+  }
+
+  for (const day of days) day.courses.sort(courseSort);
+  return days;
 }
 
 function buildDays(weeksList, startDate, timeSlots) {
@@ -629,12 +716,12 @@ export async function syncBuaaTimetable({ username, password }) {
   const yhdm = usernameFor(user, username);
   const token = tokens.token;
 
-  let weekly;
+  let weekly = null;
   try {
     weekly = await spocPost(jar, "/jxkb/queryScheduleWeeklyList", {}, token, roleCode);
   } catch (error) {
-    if (error instanceof SchoolSyncError) throw error;
-    throw new SchoolSyncError("SPOC_ERROR", "无法读取学期周次信息，请稍后再试。", 502);
+    // 周次信息只用于显示周号和日期；即使旧接口不可用，也继续尝试新的教学空间课表接口。
+    weekly = null;
   }
 
   let weeklyList = [];
@@ -643,54 +730,98 @@ export async function syncBuaaTimetable({ username, password }) {
   else if (weekly && Array.isArray(weekly)) weeklyList = weekly;
 
   const selectedWeek = chooseWeek(weeklyList);
-  if (!selectedWeek) {
-    throw new SchoolSyncError("NO_SCHEDULE", "课表中暂时没有可用的周次信息。", 404);
+  const weekNumber = selectedWeek ? selectedWeek.weekNumber : 0;
+  let xn = selectedWeek ? selectedWeek.week.XN ?? selectedWeek.week.xn ?? "" : "";
+  let xq = selectedWeek ? selectedWeek.week.XQ ?? selectedWeek.week.xq ?? "" : "";
+  let startDate = selectedWeek ? selectedWeek.startDate : "";
+  let endDate = selectedWeek ? selectedWeek.endDate : "";
+
+  if (!isDateKey(startDate)) startDate = mondayOf(todayKey());
+  if (!isDateKey(endDate) || endDate < startDate) endDate = addDays(startDate, 6);
+
+  if (!xn || !xq) {
+    try {
+      const terms = await spocPost(jar, "/component/queryXnxq", {}, token, roleCode);
+      const list = Array.isArray(terms) ? terms : [];
+      const currentTerm = list.find((item) => String(item.sfdqxq) === "1") || list[0];
+      if (currentTerm) {
+        xn = currentTerm.xn || "";
+        xq = currentTerm.xq || "";
+      }
+    } catch (error) {
+      // 学期名称缺失不影响课表本身。
+    }
   }
 
-  const weekNumber = selectedWeek.weekNumber;
-  const xn = selectedWeek.week.XN ?? selectedWeek.week.xn ?? "";
-  const xq = selectedWeek.week.XQ ?? selectedWeek.week.xq ?? "";
-  const startDate = selectedWeek.startDate || mondayOf(todayKey());
-  const endDate = selectedWeek.endDate || addDays(startDate, 6);
-
-  let slotsResponse;
+  let calendarEntries = null;
+  let calendarError = null;
   try {
-    slotsResponse = await spocPost(jar, "/jxkb/getJcsjList", {}, token, roleCode);
-  } catch (error) {
-    slotsResponse = null;
-  }
-  const jcsjList =
-    (slotsResponse && (slotsResponse.jcsjList || slotsResponse.list || slotsResponse)) || [];
-  const timeSlots = buildTimeSlots(Array.isArray(jcsjList) ? jcsjList : []);
-
-  let courseResponse;
-  try {
-    courseResponse = await spocPost(
+    calendarEntries = await spocGet(
       jar,
-      "/jxkb/getJxkbList",
-      { xn, xq, zc: weekNumber, yhdm },
+      "/jxkj/queryRlData",
+      { zksrq: startDate, zjsrq: endDate, rllx: "1" },
       token,
       roleCode
     );
   } catch (error) {
-    if (error instanceof SchoolSyncError) throw error;
-    throw new SchoolSyncError("SPOC_ERROR", "无法读取当前周课表，请稍后重试。", 502);
+    calendarError = error;
   }
 
-  let weeksList = [];
-  if (courseResponse && Array.isArray(courseResponse.weeksList)) weeksList = courseResponse.weeksList;
-  else if (courseResponse && Array.isArray(courseResponse.kblist)) weeksList = courseResponse.kblist;
-  else if (Array.isArray(courseResponse)) weeksList = courseResponse;
+  let days = Array.isArray(calendarEntries) ? buildCalendarDays(calendarEntries, startDate) : null;
+  const hasCalendarCourses = Boolean(days && days.some((day) => day.courses.length));
+  let legacyError = null;
 
-  const days = buildDays(weeksList, startDate, timeSlots);
+  if (!hasCalendarCourses) {
+    let slotsResponse = null;
+    try {
+      slotsResponse = await spocPost(jar, "/jxkb/getJcsjList", {}, token, roleCode);
+    } catch (error) {
+      slotsResponse = null;
+    }
+    const jcsjList =
+      (slotsResponse && (slotsResponse.jcsjList || slotsResponse.list || slotsResponse)) || [];
+    const timeSlots = buildTimeSlots(Array.isArray(jcsjList) ? jcsjList : []);
+
+    let legacyDays = null;
+    try {
+      const courseResponse = await spocPost(
+        jar,
+        "/jxkb/getJxkbList",
+        { xn, xq, zc: weekNumber, yhdm },
+        token,
+        roleCode
+      );
+      let weeksList = [];
+      if (courseResponse && Array.isArray(courseResponse.weeksList)) {
+        weeksList = courseResponse.weeksList;
+      } else if (courseResponse && Array.isArray(courseResponse.kblist)) {
+        weeksList = courseResponse.kblist;
+      } else if (Array.isArray(courseResponse)) {
+        weeksList = courseResponse;
+      }
+      legacyDays = buildDays(weeksList, startDate, timeSlots);
+    } catch (error) {
+      legacyError = error;
+    }
+
+    if (legacyDays && (!days || legacyDays.some((day) => day.courses.length))) {
+      days = legacyDays;
+    }
+  }
+
+  if (!days) {
+    if (calendarError instanceof SchoolSyncError) throw calendarError;
+    if (legacyError instanceof SchoolSyncError) throw legacyError;
+    throw new SchoolSyncError("TIMETABLE_ERROR", "无法读取当前周课表，请稍后重试。", 502);
+  }
 
   return {
     week: {
       xn: String(xn || ""),
       xq: String(xq || ""),
       zc: weekNumber,
-      index: weekNumber + 1,
-      label: `第 ${weekNumber + 1} 周`,
+      index: selectedWeek ? weekNumber + 1 : 0,
+      label: selectedWeek ? `第 ${weekNumber + 1} 周` : "本周",
       term: xn ? `${xn} 学年${xq ? ` 第 ${xq} 学期` : ""}` : "",
       startDate,
       endDate

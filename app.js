@@ -1113,10 +1113,11 @@
     const dayHeading = selectedSchoolDay === todayKey()
       ? "今日课程"
       : `${formatMonthDay(selectedSchoolDay)} 课程`;
+    const denseClass = selectedCourses.length >= 3 ? " is-dense" : "";
     dom.schoolBody.innerHTML = `
       <div class="school-week-strip">${weekStrip}</div>
       <div class="school-day-heading"><span>${dayHeading}</span><strong>${selectedCourses.length} 节</strong></div>
-      <div class="school-day-list">${courseList}</div>
+      <div class="school-day-list${denseClass}">${courseList}</div>
     `;
   }
 
